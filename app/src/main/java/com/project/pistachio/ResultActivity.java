@@ -13,6 +13,8 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.Switch;
 
+import java.net.URI;
+
 public class ResultActivity extends AppCompatActivity {
 
     ImageView picture;
@@ -23,14 +25,11 @@ public class ResultActivity extends AppCompatActivity {
         setContentView(R.layout.activity_result);
 
         Intent intent = getIntent();
-        Uri uri =  Uri.parse(intent.getStringExtra(MainActivity.SELECT_IMAGE));
-        String filestring = uri.getPath();
+        String imageUri = intent.getStringExtra(MainActivity.DENEME);
+        Uri myUri = Uri.parse(imageUri);
 
-        Bitmap thumbnail = BitmapFactory.decodeFile(filestring);
-        Bitmap loadedImage = intent.getParcelableExtra(MainActivity.SELECT_IMAGE);
-
-        picture = (ImageView) findViewById(R.id.imageView);
-        picture.setImageBitmap(thumbnail);
+        picture = findViewById(R.id.imageView);
+        picture.setImageURI(myUri);
 
     }
 }
