@@ -81,11 +81,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-                File dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM);
 
-                output = new File(dir, "CameraContentDemo.jpeg");
-                cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(output));
-                startActivity(cameraIntent);
+                someActivityResultLauncher.launch(cameraIntent);
             }
         });
 

@@ -3,7 +3,7 @@
     package="com.project.pistachio">
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-feature android:name="android.hardware.camera" android:required="true" />
 
     <application
         android:requestLegacyExternalStorage="true"
@@ -18,7 +18,8 @@
             android:name=".ResultActivity"
             android:parentActivityName=".MainActivity">
         </activity>
-        <activity android:name=".MainActivity">
+        <activity android:name=".MainActivity"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
