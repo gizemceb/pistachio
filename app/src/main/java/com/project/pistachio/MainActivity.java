@@ -12,39 +12,35 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import android.Manifest;
-import android.app.Activity;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.database.Cursor;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.net.Uri;
-import android.os.Build;
+import android.graphics.Matrix;
 import android.os.Bundle;
-import android.os.Environment;
 import android.provider.MediaStore;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
-import android.widget.ImageButton;
-import android.widget.ImageView;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.File;
 
 public class MainActivity extends AppCompatActivity {
     Button load_picture, take_picture;
-    public static final String DENEME = "com.project.pistachio.DENEME";
+    public static final String LOAD_PICTURE_INTENT = "com.project.pistachio.LOAD_PICTURE_INTENT";
+    public static final String TAKE_PICTURE_INTENT = "com.project.pistachio.TAKE_PICTURE_INTENT";
     ActivityResultLauncher<Intent> someActivityResultLauncher;
     File output;
+    String TYPE_OF_ACTION;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 1);
+        }
 
         someActivityResultLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
@@ -66,9 +62,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
-                    Intent i = new Intent(Intent.ACTION_PICK,
-                            MediaStore.Images.Media.INTERNAL_CONTENT_URI);
-
+                    Intent i = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI);
+                    TYPE_OF_ACTION = "LOAD_PICTURE";
                     someActivityResultLauncher.launch(i);
                 } else {
                     requestStoragePermission();
@@ -80,8 +75,8 @@ public class MainActivity extends AppCompatActivity {
         take_picture.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-
+                Intent cameraIntent = new Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
+                TYPE_OF_ACTION = "TAKE_PICTURE";
                 someActivityResultLauncher.launch(cameraIntent);
             }
         });
@@ -123,7 +118,7 @@ public class MainActivity extends AppCompatActivity {
 
         if (requestCode == 1) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                Toast.makeText(this, "İzin alında", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "İzin alındı", Toast.LENGTH_SHORT).show();
             } else {
                 Toast.makeText(this, "İzin alınmadı", Toast.LENGTH_SHORT).show();
             }
@@ -134,10 +129,19 @@ public class MainActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-
+        Bitmap mBitmap;
         Intent data1 = new Intent(MainActivity.this, ResultActivity.class);
-        String selectedimage= data.getData().toString();
-        data1.putExtra(DENEME, selectedimage);
+
+        if (TYPE_OF_ACTION == "TAKE_PICTURE"){
+            mBitmap = (Bitmap) data.getExtras().get("data");
+            Matrix matrix = new Matrix();
+            //matrix.postRotate(90.0f);
+            mBitmap = Bitmap.createBitmap(mBitmap, 0, 0, mBitmap.getWidth(), mBitmap.getHeight(), matrix, true);
+            data1.putExtra(TAKE_PICTURE_INTENT, mBitmap);
+        } else if (TYPE_OF_ACTION == "LOAD_PICTURE") {
+            String selectedImage= data.getData().toString();
+            data1.putExtra(LOAD_PICTURE_INTENT, selectedImage);
+        }
 
         startActivity(data1);
 
