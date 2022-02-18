@@ -55,7 +55,7 @@ public class ResultView extends View {
             canvas.drawRect(result.rect,mPaintRectangle);
 
             Path mPath = new Path();
-            RectF mRectF = new RectF(result.rect.left,result.rect.top,result.rect.left+TEXT_WIDTH,result.rect.top+TEXT_HEIGHT);
+            RectF mRectF = new RectF(result.rect.left,result.rect.top,result.rect.left,result.rect.top);
             mPath.addRect(mRectF, Path.Direction.CW);
             mPaintText.setColor(Color.MAGENTA);
             canvas.drawPath(mPath, mPaintText);
@@ -64,7 +64,7 @@ public class ResultView extends View {
             mPaintText.setStrokeWidth(0);
             mPaintText.setStyle(Paint.Style.FILL);
             mPaintText.setTextSize(32);
-            canvas.drawText(String.format("%s %.2f", mClasses[result.classIndex], result.score), result.rect.left + TEXT_X, result.rect.top + TEXT_Y, mPaintText);
+            canvas.drawText(String.format("%s", mClasses[result.classIndex]), result.rect.left + TEXT_X, result.rect.top + TEXT_Y, mPaintText);
             String toSpeak = mClasses[result.classIndex].toString();
             tts.speak(toSpeak, TextToSpeech.QUEUE_FLUSH, null);
         }

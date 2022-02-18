@@ -1,2 +1,2 @@
-close_pistachio
-open_pistachio
+close
+open

@@ -1,5 +1,7 @@
 package com.project.pistachio;
 
+import androidx.annotation.RequiresApi;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Intent;
@@ -8,6 +10,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.util.Log;
@@ -15,6 +18,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 
 import org.pytorch.IValue;
 import org.pytorch.Module;
@@ -31,20 +35,32 @@ import java.util.List;
 public class ResultActivity extends AppCompatActivity {
 
     ImageView picture;
-    private Button btn_hesapla;
+    private Button btn_hesapla, btn_homePage, btn_priceCalculate;
     private ResultView mResultView;
     private float mImgScaleX, mImgScaleY, mIvScaleX, mIvScaleY, mStartX, mStartY;
     private Bitmap mBitmap = null;
     private Module mModule = null;
     private ProgressBar mProgressBar;
+    private TextView result_textView, editTextKg;
+    private int ratio;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_result);
+
         picture = (ImageView) findViewById(R.id.imageView);
         mResultView = findViewById(R.id.resultView);
         mResultView.setVisibility(View.INVISIBLE);
+        result_textView = findViewById(R.id.result_textView);
+        btn_priceCalculate = findViewById(R.id.btn_calculatePrice);
+        btn_homePage = findViewById(R.id.btn_homePage);
+        btn_priceCalculate.setVisibility(View.GONE);
+        btn_homePage.setVisibility(View.GONE);
+        editTextKg = findViewById(R.id.editTextKg);
+        editTextKg.setVisibility(View.GONE);
+
 
         Intent intent = getIntent();
         if (intent.getParcelableExtra(MainActivity.TAKE_PICTURE_INTENT) != null) {
@@ -76,15 +92,6 @@ public class ResultActivity extends AppCompatActivity {
         }
 
 
-
-        /*try {
-            mBitmap = BitmapFactory.decodeStream(getAssets().open(mTestImages[0]));
-            picture.setImageBitmap(mBitmap);
-        } catch (IOException e) {
-            Log.e("Object Detection", "Error reading assets", e);
-            finish();
-        }*/
-
         btn_hesapla = findViewById(R.id.btn_hesapla);
         mProgressBar = (ProgressBar) findViewById(R.id.progressBar);
         btn_hesapla.setOnClickListener(new View.OnClickListener() {
@@ -106,6 +113,42 @@ public class ResultActivity extends AppCompatActivity {
             }
 
         });
+
+        btn_homePage.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(ResultActivity.this, MainActivity.class);
+                startActivity(intent);
+            }
+        });
+
+        btn_priceCalculate.setOnClickListener(new View.OnClickListener() {
+            double totalKg;
+            double resultPrice;
+            @Override
+            public void onClick(View view) {
+                String kgText = editTextKg.getText().toString();
+                if (!kgText.isEmpty() && kgText != null ){
+                    totalKg = Double.parseDouble(kgText);
+                    if (ratio >= 80) {
+                        resultPrice = totalKg * 150;
+                    } else if (ratio >= 50) {
+                        resultPrice = totalKg * 100;
+                    } else {
+                        resultPrice = totalKg * 90;
+                    }
+                    String resultString = result_textView.getText().toString();
+                    resultString += "\nFiyat önerimiz: " + resultPrice + "₺";
+                    result_textView.setText(resultString);
+                } else {
+                    AlertDialog.Builder builder = new AlertDialog.Builder(ResultActivity.this);
+                    builder.setMessage("Lütfen KG değeri giriniz.");
+                    builder.show();
+                }
+
+            }
+        });
+
         try {
             mModule = PyTorchAndroid.loadModuleFromAsset(getAssets(), "best.torchscript");
             BufferedReader br = new BufferedReader(new InputStreamReader(getAssets().open("classes.txt")));
@@ -161,6 +204,7 @@ public class ResultActivity extends AppCompatActivity {
         }
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.N)
     public void run(){
         Bitmap resizedBitmap = Bitmap.createScaledBitmap(mBitmap, PrePostProcessor.mInputWidth, PrePostProcessor.mInputHeight, true);
         final Tensor inputTensor = TensorImageUtils.bitmapToFloat32Tensor(resizedBitmap, PrePostProcessor.NO_MEAN_RGB, PrePostProcessor.NO_STD_RGB);
@@ -170,13 +214,24 @@ public class ResultActivity extends AppCompatActivity {
         final float[] outputs = outputTensor.getDataAsFloatArray();
         final ArrayList<Result> results =  PrePostProcessor.outputsToNMSPredictions(outputs, mImgScaleX, mImgScaleY, mIvScaleX, mIvScaleY, mStartX, mStartY);
 
+        ratio = findTheRatioOfPistachio(results);
         runOnUiThread(() -> {
-            btn_hesapla.setEnabled(true);
-            btn_hesapla.setText("Hesapla");
+            btn_hesapla.setVisibility(View.GONE);
+            btn_homePage.setVisibility(View.VISIBLE);
+            btn_priceCalculate.setVisibility(View.VISIBLE);
             mResultView.setResults(results);
             mResultView.invalidate();
             mResultView.setVisibility(View.VISIBLE);
-            mProgressBar.setVisibility(ProgressBar.INVISIBLE);
+            mProgressBar.setVisibility(View.GONE);
+            editTextKg.setVisibility(View.VISIBLE);
+            result_textView.setText("Fıstıklarınızın olgunluk oranı: %" + ratio +". \nFiyat hesaplatmak istiyorsanız lütfen toplam kilo değeri alanını doldurun.");
         });
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.N)
+    public int findTheRatioOfPistachio(ArrayList<Result> results) {
+        int lengthOfResult = results.size();
+        double pistachiosGoodQualityCount = (double) results.stream().filter(result -> result.classIndex == 1).count();
+        return (int) ((pistachiosGoodQualityCount/lengthOfResult) * 100);
     }
 }
